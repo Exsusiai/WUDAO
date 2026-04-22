@@ -5,7 +5,9 @@ from uuid import UUID
 
 import ccxt
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, field_validator
+from typing import Self
+
+from pydantic import BaseModel, field_validator, model_validator
 from sqlmodel import Session, select
 
 from python.core.crypto import decrypt, encrypt
@@ -37,6 +39,12 @@ class CreateExchangeAccountRequest(BaseModel):
     @classmethod
     def _normalize_exchange_id(cls, v: str) -> str:
         return v.strip().lower()
+
+    @model_validator(mode="after")
+    def _validate_hyperliquid(self) -> Self:
+        if self.exchange_id == "hyperliquid" and self.passphrase:
+            raise ValueError("Hyperliquid uses wallet-based auth and does not accept a passphrase")
+        return self
 
 
 class UpdateExchangeAccountRequest(BaseModel):

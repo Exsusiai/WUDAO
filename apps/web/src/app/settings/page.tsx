@@ -89,6 +89,8 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
+    const isHyperliquid = form.exchange_id === "hyperliquid";
+
     if (!form.label.trim() || !form.exchange_id) {
       setError("标签和交易所不能为空");
       return;
@@ -101,7 +103,7 @@ export default function SettingsPage() {
           label: form.label,
           ...(form.api_key ? { api_key: form.api_key } : {}),
           ...(form.api_secret ? { api_secret: form.api_secret } : {}),
-          ...(form.passphrase ? { passphrase: form.passphrase } : {}),
+          ...(!isHyperliquid && form.passphrase ? { passphrase: form.passphrase } : {}),
           mode: form.mode,
           is_default: form.is_default,
         });
@@ -117,7 +119,7 @@ export default function SettingsPage() {
         }
       } else {
         if (!form.api_key || !form.api_secret) {
-          setError("API Key 和 Secret 不能为空");
+          setError(isHyperliquid ? "钱包地址和私钥不能为空" : "API Key 和 Secret 不能为空");
           setSaving(false);
           return;
         }
@@ -129,7 +131,7 @@ export default function SettingsPage() {
           mode: form.mode,
           is_default: form.is_default,
         };
-        if (form.passphrase) req.passphrase = form.passphrase;
+        if (!isHyperliquid && form.passphrase) req.passphrase = form.passphrase;
         const created = await createAccount(req);
         setAccounts((prev) => {
           const withoutDefault = form.is_default
@@ -338,48 +340,77 @@ export default function SettingsPage() {
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-light tracking-wide">
-                  API Key{editingId && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">留空则不更新</span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  value={form.api_key}
-                  onChange={(e) => setForm((f) => ({ ...f, api_key: e.target.value }))}
-                  placeholder={editingId ? "（留空不修改）" : "API Key"}
-                  className={inputClasses}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-light tracking-wide">
-                  API Secret{editingId && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">留空则不更新</span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  value={form.api_secret}
-                  onChange={(e) => setForm((f) => ({ ...f, api_secret: e.target.value }))}
-                  placeholder={editingId ? "（留空不修改）" : "API Secret"}
-                  className={inputClasses}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-light tracking-wide">
-                  Passphrase <span className="ml-1 text-[10px] text-muted-foreground">可选 Optional</span>
-                </label>
-                <input
-                  type="password"
-                  value={form.passphrase}
-                  onChange={(e) => setForm((f) => ({ ...f, passphrase: e.target.value }))}
-                  placeholder="（如 OKX 需要）"
-                  className={inputClasses}
-                />
-              </div>
+              {form.exchange_id === "hyperliquid" ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-light tracking-wide">
+                      钱包地址 <span className="ml-1 text-[10px] text-muted-foreground">Wallet Address{editingId && " · 留空则不更新"}</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.api_key}
+                      onChange={(e) => setForm((f) => ({ ...f, api_key: e.target.value }))}
+                      placeholder={editingId ? "（留空不修改）" : "0x…"}
+                      className={inputClasses}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-light tracking-wide">
+                      私钥 <span className="ml-1 text-[10px] text-muted-foreground">Private Key{editingId && " · 留空则不更新"}</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={form.api_secret}
+                      onChange={(e) => setForm((f) => ({ ...f, api_secret: e.target.value }))}
+                      placeholder={editingId ? "（留空不修改）" : "0x…"}
+                      className={inputClasses}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-light tracking-wide">
+                      API Key{editingId && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">留空则不更新</span>
+                      )}
+                    </label>
+                    <input
+                      type="password"
+                      value={form.api_key}
+                      onChange={(e) => setForm((f) => ({ ...f, api_key: e.target.value }))}
+                      placeholder={editingId ? "（留空不修改）" : "API Key"}
+                      className={inputClasses}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-light tracking-wide">
+                      API Secret{editingId && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">留空则不更新</span>
+                      )}
+                    </label>
+                    <input
+                      type="password"
+                      value={form.api_secret}
+                      onChange={(e) => setForm((f) => ({ ...f, api_secret: e.target.value }))}
+                      placeholder={editingId ? "（留空不修改）" : "API Secret"}
+                      className={inputClasses}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-light tracking-wide">
+                      Passphrase <span className="ml-1 text-[10px] text-muted-foreground">可选 Optional</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={form.passphrase}
+                      onChange={(e) => setForm((f) => ({ ...f, passphrase: e.target.value }))}
+                      placeholder="（如 OKX 需要）"
+                      className={inputClasses}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-light tracking-wide">
